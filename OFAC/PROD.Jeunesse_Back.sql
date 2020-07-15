@@ -84,20 +84,20 @@ BEGIN
     DECLARE  @DateEntered DATETIME = GETDATE()
 
     INSERT INTO dbo.SDN_BlockProfiles_Log ( MainFK, Blocked, EnteredMainFK, Notes, DateEntered )
-    VALUES (@MainFK, @Blocked, @EnteredMainFK, Notes, @DateEntered)
+    VALUES (@MainFK, @Blocked, @EnteredMainFK, @Notes, @DateEntered)
  END
 GO
 
-IF OBJECT_ID(N'dbo.sp_SDN_UpsertSDN_MainProfile_new', N'P') IS NULL
-    EXEC('CREATE PROCEDURE dbo.sp_SDN_UpsertSDN_MainProfile_new AS BEGIN RETURN; END')
+IF OBJECT_ID(N'dbo.sp_SDN_MergeSDN_MainProfile_new', N'P') IS NULL
+    EXEC('CREATE PROCEDURE dbo.sp_SDN_MergeSDN_MainProfile_new AS BEGIN RETURN; END')
 GO
 --=====================================================================================================
--- Purpose: upsert dbo.SDN_MainProfile_new
+-- Purpose: merge dbo.SDN_MainProfile_new
 --=====================================================================================================
 -- YYYY-MM-DD_####  Author                 Description
 -- 2020-07-09_0001  Vasyl Yeleiko (VY)     Created.(TFS# #####)
 --===================================================================================================== 
-ALTER PROCEDURE dbo.sp_SDN_UpsertSDN_MainProfile_new
+ALTER PROCEDURE dbo.sp_SDN_MergeSDN_MainProfile_new
                               @MainFK    INT            -- MainPK for new or updated user 
                              ,@SiteURL   VARCHAR(50)    -- new or updated SiteURL
                              ,@fname     NVARCHAR(50)   -- new or updated fname
@@ -127,7 +127,7 @@ BEGIN
     SET @address3 = IIF(@address3 = @address2 OR @address3 = @address1,'',@address3)
     SET @address2 = IIF(@address3 = @address2 OR @address2 = @address1,'',@address2)
 
-    --upsert
+    --update
     IF EXISTS(SELECT 1 FROM Jeunesse_Back.dbo.SDN_MainProfile_new WHERE MainFK = @MainFK)
     BEGIN 
         UPDATE dbo.SDN_MainProfile_new
@@ -146,7 +146,8 @@ BEGIN
                ,shipaddr3 = @shipaddr3
             WHERE MainFK = @MainFK
     END
-    ELSE 
+    ELSE
+    --insert 
     BEGIN
     INSERT INTO dbo.SDN_MainProfile_new ( MainFK, SiteURL, fname, lname, country, city, address1, address2, address3, country2, city2, shipaddr1, shipaddr2, shipaddr3 )
     VALUES ( @MainFK, @SiteURL, @fname, @lname, @country, @city, @address1, @address2, @address3, @country2, @city2, @shipaddr1, @shipaddr2, @shipaddr3 )

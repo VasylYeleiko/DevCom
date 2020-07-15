@@ -34,18 +34,18 @@ CREATE TABLE [dbo].[SDN_MainProfile] ( [SDN_MainProfilePK]   INT IDENTITY(1,1) P
                                       ,[NewOne]              BIT );
 GO
 
-IF OBJECT_ID(N'dbo.SDN_MainProfile_Splitted', N'U') IS NOT NULL
-   DROP TABLE dbo.SDN_MainProfile_Splitted;
+IF OBJECT_ID(N'dbo.SDN_MainProfile_Split', N'U') IS NOT NULL
+   DROP TABLE dbo.SDN_MainProfile_Split;
 GO
-CREATE TABLE [dbo].[SDN_MainProfile_Splitted] ( [SDN_MainProfile_SplittedPK] INT IDENTITY(1,1) PRIMARY KEY CLUSTERED
-                                               ,[MainFK]                    INT NOT NULL
-                                               ,[SplittedName]              VARCHAR(250)
-                                               ,[SplittedAddress]           VARCHAR(250)
-                                               ,[SplittedShipAddress]       VARCHAR(250) );
+CREATE TABLE [dbo].[SDN_MainProfile_Split] ( [SDN_MainProfile_SplitPK] INT IDENTITY(1,1) PRIMARY KEY CLUSTERED
+                                               ,[MainFK]                 INT NOT NULL
+                                               ,[SplitName]              VARCHAR(250)
+                                               ,[SplitAddress]           VARCHAR(250)
+                                               ,[SplitShipAddress]       VARCHAR(250) );
 GO
 
-CREATE NONCLUSTERED INDEX [IDX_SDN_MainProfile_Splitted_MainFK_Includes] ON [dbo].[SDN_MainProfile_Splitted] ([MainFK])
-INCLUDE ([SplittedName],[SplittedAddress],[SplittedShipAddress])
+CREATE NONCLUSTERED INDEX [IDX_SDN_MainProfile_Split_MainFK_Includes] ON [dbo].[SDN_MainProfile_Split] ([MainFK])
+INCLUDE ([SplitName],[SplitAddress],[SplitShipAddress])
 GO
  
 IF OBJECT_ID(N'dbo.SDN_main', N'U') IS NOT NULL
@@ -149,8 +149,8 @@ GO
 -- =========== --
 --    sproc    --
 -- =========== --
-IF OBJECT_ID(N'dbo.sp_SSIS_SDN_MainProfile_deleteUnused', N'P') IS NULL
-    EXEC('CREATE PROCEDURE dbo.sp_SSIS_SDN_MainProfile_deleteUnused AS BEGIN RETURN; END')
+IF OBJECT_ID(N'dbo.sp_SSIS_SDN_MainProfile_DeleteUnused', N'P') IS NULL
+    EXEC('CREATE PROCEDURE dbo.sp_SSIS_SDN_MainProfile_DeleteUnused AS BEGIN RETURN; END')
 GO
 --=====================================================================================================
 -- Purpose: delete records which not exist on dbo.Main
@@ -158,7 +158,7 @@ GO
 -- YYYY-MM-DD_####  Author                 Description
 -- 2020-07-09_0001  Vasyl Yeleiko (VY)     Created.(TFS# #####)
 --===================================================================================================== 
-ALTER PROCEDURE dbo.sp_SSIS_SDN_MainProfile_deleteUnused
+ALTER PROCEDURE dbo.sp_SSIS_SDN_MainProfile_DeleteUnused
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -170,28 +170,28 @@ BEGIN
 END
 GO
 
-IF OBJECT_ID(N'dbo.sp_SSIS_SDN_MergeSplittedTable', N'P') IS NULL
-    EXEC('CREATE PROCEDURE dbo.sp_SSIS_SDN_MergeSplittedTable AS BEGIN RETURN; END')
+IF OBJECT_ID(N'dbo.sp_SSIS_SDN_MergeSplitTable', N'P') IS NULL
+    EXEC('CREATE PROCEDURE dbo.sp_SSIS_SDN_MergeSplitTable AS BEGIN RETURN; END')
 GO
 --=====================================================================================================
--- Purpose: merge dbo.SDN_MainProfile_Splitted with new records 
+-- Purpose: merge dbo.SDN_MainProfile_Split with new records 
 --=====================================================================================================
 -- YYYY-MM-DD_####  Author                 Description
 -- 2020-07-09_0001  Vasyl Yeleiko (VY)     Created.(TFS# #####)
 --===================================================================================================== 
-ALTER PROCEDURE dbo.sp_SSIS_SDN_MergeSplittedTable
+ALTER PROCEDURE dbo.sp_SSIS_SDN_MergeSplitTable
 AS
 BEGIN
     SET NOCOUNT ON;
     -- delete unused
     DELETE mps
-        FROM dbo.SDN_MainProfile_Splitted AS mps
-        LEFT JOIN dbo.SDN_MainProfile     AS mp ON mp.MainFK = mps.MainFK
+        FROM dbo.SDN_MainProfile_Split AS mps
+        LEFT JOIN dbo.SDN_MainProfile  AS mp ON mp.MainFK = mps.MainFK
         WHERE mp.SDN_MainProfilePK IS NULL 
            OR mp.NewOne = 1
 
     -- insert new
-    INSERT INTO dbo.SDN_MainProfile_Splitted (MainFK, SplittedAddress)
+    INSERT INTO dbo.SDN_MainProfile_Split (MainFK, SplitAddress)
         SELECT mp.MainFK
               ,a.value
             FROM dbo.SDN_MainProfile AS mp 
@@ -199,7 +199,7 @@ BEGIN
             WHERE mp.NewOne = 1
               AND LEN(a.value)>2 
 
-    INSERT INTO dbo.SDN_MainProfile_Splitted (MainFK, SplittedShipAddress)
+    INSERT INTO dbo.SDN_MainProfile_Split (MainFK, SplitShipAddress)
         SELECT mp.MainFK
               ,a.value
             FROM dbo.SDN_MainProfile AS mp 
@@ -207,7 +207,7 @@ BEGIN
             WHERE mp.NewOne = 1
               AND LEN(a.value)>2
             
-    INSERT INTO dbo.SDN_MainProfile_Splitted (MainFK, SplittedName)
+    INSERT INTO dbo.SDN_MainProfile_Split (MainFK, SplitName)
         SELECT mp.MainFK
               ,a.value
             FROM dbo.SDN_MainProfile AS mp 
@@ -466,5 +466,3 @@ END
 --    IF OBJECT_ID('tempdb..#Main_NewOne') IS NOT NULL
 --        DROP TABLE #Main_NewOne            
 --END
-
-
